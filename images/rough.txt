@@ -1,0 +1,65 @@
+import cv2
+from deepface import DeepFace
+
+# 1. Initialize the Webcam
+# '0' is usually the default webcam.
+cap = cv2.VideoCapture(0)
+
+# Check if camera opened successfully
+if not cap.isOpened():
+    print("Could not open webcam")
+    exit()
+
+print("System Ready. Press 's' to scan face, 'q' to quit.")
+
+while True:
+    # 2. Read a frame from the camera
+    # 'ret' is True if the frame was read correctly
+    # 'frame' is the actual image (numpy array)
+    ret, frame = cap.read()
+    
+    if not ret:
+        print("Failed to grab frame")
+        break
+
+    # 3. Display instructions on the screen
+    # cv2.putText adds text to the image
+    cv2.putText(frame, "Press 's' to Mark Attendance", (30, 50), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+
+    # 4. Show the live video window
+    cv2.imshow('Attendance System', frame)
+
+    # 5. Listen for keyboard input
+    key = cv2.waitKey(1) & 0xFF
+
+    # If 's' is pressed, perform recognition
+    if key == ord('s'):
+        print("Scanning...")
+        try:
+            # DeepFace.verify compares the captured 'frame' against 'reference.jpg'
+            result = DeepFace.verify(
+                img1_path = frame,           # The current webcam frame
+                img2_path = "reference.jpg", # The employee photo on disk
+                model_name = "VGG-Face",
+                enforce_detection = True     # Stops if no face is found
+            )
+
+            # Check the result
+            if result['verified']:
+                print("✅ ATTENDANCE MARKED: Identity Verified!")
+                print(f"Confidence (Distance): {result['distance']}")
+            else:
+                print("❌ ACCESS DENIED: Face does not match.")
+        
+        except ValueError:
+            # This happens if DeepFace can't find *any* face in the frame
+            print("⚠️ No face detected! Please look at the camera.")
+
+    # If 'q' is pressed, quit the loop
+    elif key == ord('q'):
+        break
+
+# 6. Clean up
+cap.release()
+cv2.destroyAllWindows()
